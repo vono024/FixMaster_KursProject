@@ -6,23 +6,24 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateRepairRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
-        return false;
+        return auth()->check();
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
-     */
     public function rules(): array
     {
-        return [
-            //
+        $rules = [
+            'problem_description' => 'sometimes|string|min:10',
+            'priority' => 'sometimes|in:low,medium,high',
         ];
+
+        if (auth()->user()->role === 'master' || auth()->user()->role === 'admin') {
+            $rules['status'] = 'sometimes|in:new,in_progress,completed,closed';
+            $rules['estimated_cost'] = 'nullable|numeric|min:0';
+            $rules['final_cost'] = 'nullable|numeric|min:0';
+        }
+
+        return $rules;
     }
 }

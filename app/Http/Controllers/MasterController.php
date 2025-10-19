@@ -2,63 +2,45 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
+use App\Models\MasterProfile;
+use App\Models\RepairRequest;
 use Illuminate\Http\Request;
 
 class MasterController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
-        //
+        $masters = User::where('role', 'master')
+            ->with('masterProfile')
+            ->paginate(12);
+
+        return view('masters.index', compact('masters'));
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
+    public function show(User $master)
     {
-        //
+        $master->load(['masterProfile', 'reviews.client']);
+
+        $completedRepairs = RepairRequest::where('master_id', $master->id)
+            ->where('status', 'completed')
+            ->count();
+
+        return view('masters.show', compact('master', 'completedRepairs'));
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
+    public function updateProfile(Request $request)
     {
-        //
-    }
+        $validated = $request->validate([
+            'specialization' => 'required|string|max:255',
+            'experience_years' => 'required|integer|min:0',
+        ]);
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        //
-    }
+        $profile = MasterProfile::updateOrCreate(
+            ['user_id' => auth()->id()],
+            $validated
+        );
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
+        return redirect()->back()->with('success', 'Профіль оновлено');
     }
 }

@@ -6,23 +6,28 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class StoreReviewRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
-        return false;
+        return auth()->check() && auth()->user()->role === 'client';
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
-     */
     public function rules(): array
     {
         return [
-            //
+            'rating' => 'required|integer|min:1|max:5',
+            'comment' => 'required|string|min:10|max:1000',
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'rating.required' => 'Оберіть оцінку',
+            'rating.min' => 'Мінімальна оцінка 1',
+            'rating.max' => 'Максимальна оцінка 5',
+            'comment.required' => 'Напишіть коментар',
+            'comment.min' => 'Коментар має бути не менше 10 символів',
+            'comment.max' => 'Коментар занадто довгий',
         ];
     }
 }

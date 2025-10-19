@@ -2,63 +2,49 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Notification;
 use Illuminate\Http\Request;
 
 class NotificationController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
-        //
+        $notifications = Notification::where('user_id', auth()->id())
+            ->orderBy('created_at', 'desc')
+            ->paginate(20);
+
+        return view('notifications.index', compact('notifications'));
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
+    public function markAsRead($id)
     {
-        //
+        $notification = Notification::where('user_id', auth()->id())
+            ->findOrFail($id);
+
+        $notification->update(['is_read' => true]);
+
+        return redirect()->back();
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
+    public function markAllAsRead()
     {
-        //
+        Notification::where('user_id', auth()->id())
+            ->where('is_read', false)
+            ->update(['is_read' => true]);
+
+        return redirect()->back()->with('success', 'Всі повідомлення прочитано');
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
+    public function sendStatusNotification($repairRequestId, $message)
     {
-        //
-    }
+        $repairRequest = \App\Models\RepairRequest::findOrFail($repairRequestId);
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
+        Notification::create([
+            'user_id' => $repairRequest->client_id,
+            'repair_request_id' => $repairRequestId,
+            'type' => 'status_change',
+            'message' => $message,
+            'sent_at' => now(),
+        ]);
     }
 }

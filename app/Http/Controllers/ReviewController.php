@@ -2,63 +2,55 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Review;
+use App\Models\RepairRequest;
+use App\Http\Requests\StoreReviewRequest;
 use Illuminate\Http\Request;
 
 class ReviewController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
+    public function store(StoreReviewRequest $request, RepairRequest $repairRequest)
+    {
+        $review = Review::create([
+            'repair_request_id' => $repairRequest->id,
+            'client_id' => auth()->id(),
+            'master_id' => $repairRequest->master_id,
+            'rating' => $request->rating,
+            'comment' => $request->comment,
+        ]);
+
+        $this->updateMasterRating($repairRequest->master_id);
+
+        return redirect()->back()->with('success', 'Відгук додано');
+    }
+
     public function index()
     {
-        //
+        $reviews = Review::with(['client', 'master', 'repairRequest'])
+            ->orderBy('created_at', 'desc')
+            ->paginate(15);
+
+        return view('reviews.index', compact('reviews'));
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
+    public function getMasterReviews($masterId)
     {
-        //
+        $reviews = Review::where('master_id', $masterId)
+            ->with('client')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return response()->json($reviews);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
+    private function updateMasterRating($masterId)
     {
-        //
-    }
+        $avgRating = Review::where('master_id', $masterId)->avg('rating');
+        $totalReviews = Review::where('master_id', $masterId)->count();
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
+        \App\Models\MasterProfile::where('user_id', $masterId)->update([
+            'average_rating' => round($avgRating, 2),
+            'total_repairs' => $totalReviews,
+        ]);
     }
 }

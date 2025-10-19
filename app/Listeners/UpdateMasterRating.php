@@ -3,24 +3,23 @@
 namespace App\Listeners;
 
 use App\Events\ReviewSubmitted;
+use App\Services\RatingService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
 
-class UpdateMasterRating
+class UpdateMasterRating implements ShouldQueue
 {
-    /**
-     * Create the event listener.
-     */
-    public function __construct()
+    use InteractsWithQueue;
+
+    protected $ratingService;
+
+    public function __construct(RatingService $ratingService)
     {
-        //
+        $this->ratingService = $ratingService;
     }
 
-    /**
-     * Handle the event.
-     */
-    public function handle(ReviewSubmitted $event): void
+    public function handle(ReviewSubmitted $event)
     {
-        //
+        $this->ratingService->updateMasterRating($event->review->master_id);
     }
 }

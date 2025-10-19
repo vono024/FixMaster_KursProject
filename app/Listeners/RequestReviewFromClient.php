@@ -3,24 +3,23 @@
 namespace App\Listeners;
 
 use App\Events\RepairCompleted;
+use App\Services\NotificationService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
 
-class RequestReviewFromClient
+class RequestReviewFromClient implements ShouldQueue
 {
-    /**
-     * Create the event listener.
-     */
-    public function __construct()
+    use InteractsWithQueue;
+
+    protected $notificationService;
+
+    public function __construct(NotificationService $notificationService)
     {
-        //
+        $this->notificationService = $notificationService;
     }
 
-    /**
-     * Handle the event.
-     */
-    public function handle(RepairCompleted $event): void
+    public function handle(RepairCompleted $event)
     {
-        //
+        $this->notificationService->sendReviewRequest($event->repairRequest->id);
     }
 }

@@ -2,26 +2,26 @@
 
 namespace App\Jobs;
 
+use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Foundation\Bus\Dispatchable;
+use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Queue\SerializesModels;
+use App\Services\RatingService;
 
 class CalculateMasterRating implements ShouldQueue
 {
-    use Queueable;
+    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    /**
-     * Create a new job instance.
-     */
-    public function __construct()
+    protected $masterId;
+
+    public function __construct(int $masterId)
     {
-        //
+        $this->masterId = $masterId;
     }
 
-    /**
-     * Execute the job.
-     */
-    public function handle(): void
+    public function handle(RatingService $ratingService)
     {
-        //
+        $ratingService->updateMasterRating($this->masterId);
     }
 }

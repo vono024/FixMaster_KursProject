@@ -9,28 +9,25 @@ use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
+use App\Models\RepairRequest;
 
 class RepairStatusChanged
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    /**
-     * Create a new event instance.
-     */
-    public function __construct()
+    public $repairRequest;
+    public $oldStatus;
+    public $newStatus;
+
+    public function __construct(RepairRequest $repairRequest, string $oldStatus, string $newStatus)
     {
-        //
+        $this->repairRequest = $repairRequest;
+        $this->oldStatus = $oldStatus;
+        $this->newStatus = $newStatus;
     }
 
-    /**
-     * Get the channels the event should broadcast on.
-     *
-     * @return array<int, \Illuminate\Broadcasting\Channel>
-     */
-    public function broadcastOn(): array
+    public function broadcastOn()
     {
-        return [
-            new PrivateChannel('channel-name'),
-        ];
+        return new PrivateChannel('repair.' . $this->repairRequest->id);
     }
 }

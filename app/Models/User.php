@@ -16,7 +16,11 @@ class User extends Authenticatable
         'password',
         'role',
         'phone',
-        'address',
+        'specialization',
+        'bio',
+        'hourly_rate',
+        'avatar',
+        'profile_completed',
     ];
 
     protected $hidden = [
@@ -24,40 +28,36 @@ class User extends Authenticatable
         'remember_token',
     ];
 
-    protected function casts(): array
+    protected $casts = [
+        'email_verified_at' => 'datetime',
+        'password' => 'hashed',
+        'hourly_rate' => 'decimal:2',
+        'profile_completed' => 'boolean',
+    ];
+
+    public function clientRepairs()
     {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-        ];
+        return $this->hasMany(RepairRequest::class, 'client_id');
     }
 
-    public function isAdmin(): bool
+    public function assignedRepairs()
     {
-        return $this->role === 'admin';
-    }
-
-    public function isMaster(): bool
-    {
-        return $this->role === 'master';
-    }
-
-    public function isClient(): bool
-    {
-        return $this->role === 'client';
-    }
-
-    public function repairRequests()
-    {
-        if ($this->isClient()) {
-            return $this->hasMany(RepairRequest::class, 'client_id');
-        }
         return $this->hasMany(RepairRequest::class, 'master_id');
     }
 
-    public function masterProfile()
+    public function givenReviews()
     {
-        return $this->hasOne(MasterProfile::class);
+        return $this->hasMany(Review::class, 'client_id');
+    }
+
+    public function receivedReviews()
+    {
+        return $this->hasMany(Review::class, 'master_id');
+    }
+
+    public function reviews()
+    {
+        return $this->receivedReviews();
     }
 
     public function notifications()
@@ -65,16 +65,21 @@ class User extends Authenticatable
         return $this->hasMany(Notification::class);
     }
 
-    public function reviews()
+    public function sentMessages()
     {
-        if ($this->isClient()) {
-            return $this->hasMany(Review::class, 'client_id');
-        }
-        return $this->hasMany(Review::class, 'master_id');
+        return $this->hasMany(Message::class, 'sender_id');
     }
 
-    public function statusChanges()
+    public function receivedMessages()
     {
-        return $this->hasMany(RepairStatus::class, 'changed_by');
+        return $this->hasMany(Message::class, 'receiver_id');
+    }
+
+    public function getAvatarUrlAttribute()
+    {
+        if ($this->avatar) {
+            return asset('storage/' . $this->avatar);
+        }
+        return asset('images/default-avatar.png');
     }
 }

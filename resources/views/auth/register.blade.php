@@ -1,8 +1,4 @@
-@extends('layouts.app')
-
-@section('title', 'Реєстрація')
-
-@section('content')
+<x-app-layout>
     <div class="min-h-[80vh] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
         <div class="max-w-md w-full space-y-8 animate-scale-in">
             <div class="text-center">
@@ -163,4 +159,4 @@
             </div>
         </div>
     </div>
-@endsection
+</x-app-layout>

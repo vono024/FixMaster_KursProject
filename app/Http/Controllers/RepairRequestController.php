@@ -4,33 +4,32 @@ namespace App\Http\Controllers;
 
 use App\Models\RepairRequest;
 use App\Models\User;
-use App\Models\Notification;
 use App\Http\Requests\StoreRepairRequest;
 use App\Http\Requests\UpdateRepairRequest;
-use App\Events\RepairStatusChanged;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
 
 class RepairRequestController extends Controller
 {
     public function index()
     {
-        $user = Auth::user();
+        $user = auth()->user();
 
-        if ($user->isAdmin()) {
-            $repairs = RepairRequest::with(['client', 'master'])
-                ->orderBy('created_at', 'desc')
+        if ($user->role === 'client') {
+            $repairs = RepairRequest::where('client_id', $user->id)
+                ->with('master')
+                ->latest()
                 ->paginate(10);
-        } elseif ($user->isMaster()) {
-            $repairs = RepairRequest::with(['client'])
-                ->where('master_id', $user->id)
-                ->orderBy('created_at', 'desc')
+        } elseif ($user->role === 'master') {
+            $repairs = RepairRequest::where(function($query) use ($user) {
+                $query->where('master_id', $user->id)
+                    ->orWhere('status', 'new');
+            })
+                ->with('client')
+                ->latest()
                 ->paginate(10);
         } else {
-            $repairs = RepairRequest::with(['master'])
-                ->where('client_id', $user->id)
-                ->orderBy('created_at', 'desc')
+            $repairs = RepairRequest::with(['client', 'master'])
+                ->latest()
                 ->paginate(10);
         }
 
@@ -44,49 +43,39 @@ class RepairRequestController extends Controller
 
     public function store(StoreRepairRequest $request)
     {
-        $validated = $request->validated();
-        $validated['client_id'] = Auth::id();
-        $validated['status'] = 'new';
-
-        if ($request->hasFile('photos')) {
-            $photos = [];
-            foreach ($request->file('photos') as $photo) {
-                $path = $photo->store('repair-photos', 'public');
-                $photos[] = $path;
-            }
-            $validated['photos'] = $photos;
-        }
-
-        $repair = RepairRequest::create($validated);
-
-        Notification::create([
-            'user_id' => Auth::id(),
-            'repair_request_id' => $repair->id,
-            'type' => 'new_request',
-            'message' => 'Вашу заявку №' . $repair->id . ' успішно створено',
-            'sent_at' => now(),
+        $repair = RepairRequest::create([
+            'client_id' => auth()->id(),
+            'title' => $request->title,
+            'description' => $request->description,
+            'device_type' => $request->device_type,
+            'scheduled_date' => $request->scheduled_date,
+            'status' => 'new',
         ]);
 
-        return redirect()->route('repairs.show', $repair)
-            ->with('success', 'Заявку на ремонт створено успішно');
+        return redirect()->route('repairs.show', $repair)->with('success', 'Заявку створено успішно!');
     }
 
     public function show(RepairRequest $repair)
     {
-        $this->authorize('view', $repair);
+        $user = auth()->user();
 
-        $repair->load(['client', 'master', 'statuses.changedBy', 'review']);
+        if ($user->role === 'master' && $repair->master_id !== $user->id && $repair->master_id !== null && $repair->status !== 'new') {
+            abort(403, 'Немає доступу до цієї заявки');
+        }
+
+        if ($user->role === 'client' && $repair->client_id !== $user->id) {
+            abort(403, 'Немає доступу до цієї заявки');
+        }
+
+        $repair->load(['client', 'master', 'review', 'messages.sender']);
 
         return view('repairs.show', compact('repair'));
     }
 
     public function edit(RepairRequest $repair)
     {
-        $this->authorize('update', $repair);
-
-        if (!$repair->isEditable()) {
-            return redirect()->route('repairs.show', $repair)
-                ->with('error', 'Цю заявку вже не можна редагувати');
+        if (!$repair->canBeEditedBy(auth()->user())) {
+            abort(403, 'Ви не можете редагувати цю заявку');
         }
 
         return view('repairs.edit', compact('repair'));
@@ -94,117 +83,61 @@ class RepairRequestController extends Controller
 
     public function update(UpdateRepairRequest $request, RepairRequest $repair)
     {
-        $this->authorize('update', $repair);
-
-        if (!$repair->isEditable()) {
-            return redirect()->route('repairs.show', $repair)
-                ->with('error', 'Цю заявку вже не можна редагувати');
+        if (!$repair->canBeEditedBy(auth()->user())) {
+            abort(403, 'Ви не можете редагувати цю заявку');
         }
 
-        $validated = $request->validated();
+        $repair->update($request->validated());
 
-        if ($request->hasFile('photos')) {
-            if ($repair->photos) {
-                foreach ($repair->photos as $photo) {
-                    Storage::disk('public')->delete($photo);
-                }
-            }
-
-            $photos = [];
-            foreach ($request->file('photos') as $photo) {
-                $path = $photo->store('repair-photos', 'public');
-                $photos[] = $path;
-            }
-            $validated['photos'] = $photos;
-        }
-
-        $repair->update($validated);
-
-        return redirect()->route('repairs.show', $repair)
-            ->with('success', 'Заявку оновлено успішно');
+        return redirect()->route('repairs.show', $repair)->with('success', 'Заявку оновлено!');
     }
 
     public function destroy(RepairRequest $repair)
     {
-        $this->authorize('delete', $repair);
-
-        if ($repair->photos) {
-            foreach ($repair->photos as $photo) {
-                Storage::disk('public')->delete($photo);
-            }
+        if (!$repair->canBeDeletedBy(auth()->user())) {
+            abort(403, 'Ви не можете видалити цю заявку');
         }
 
         $repair->delete();
 
-        return redirect()->route('repairs.index')
-            ->with('success', 'Заявку видалено');
+        return redirect()->route('repairs.index')->with('success', 'Заявку видалено!');
     }
 
-    public function changeStatus(Request $request, RepairRequest $repair)
+    public function assign(Request $request, RepairRequest $repair)
     {
-        $this->authorize('changeStatus', $repair);
+        $user = auth()->user();
 
-        $request->validate([
-            'status' => 'required|in:assigned,in_progress,completed,closed,cancelled',
-            'comment' => 'nullable|string|max:500',
-        ]);
-
-        $oldStatus = $repair->status;
-        $repair->update(['status' => $request->status]);
-
-        if ($request->status === 'completed') {
-            $repair->update([
-                'completed_at' => now(),
-                'actual_completion_date' => now()->toDateString(),
-            ]);
+        if ($user->role !== 'master' && $user->role !== 'admin') {
+            abort(403);
         }
 
-        $repair->statuses()->create([
-            'status' => $request->status,
-            'comment' => $request->comment,
-            'changed_by' => Auth::id(),
-        ]);
-
-        event(new RepairStatusChanged($repair, $oldStatus, $request->status));
-
-        return redirect()->route('repairs.show', $repair)
-            ->with('success', 'Статус змінено успішно');
-    }
-
-    public function assignMaster(Request $request, RepairRequest $repair)
-    {
-        $this->authorize('assign', $repair);
-
-        $request->validate([
-            'master_id' => 'required|exists:users,id',
-        ]);
-
-        $master = User::findOrFail($request->master_id);
-
-        if (!$master->isMaster()) {
-            return back()->with('error', 'Обраний користувач не є майстром');
+        if ($repair->status !== 'new') {
+            return back()->with('error', 'Цю заявку вже взято в роботу');
         }
 
         $repair->update([
-            'master_id' => $master->id,
+            'master_id' => $user->id,
             'status' => 'assigned',
         ]);
 
-        $repair->statuses()->create([
-            'status' => 'assigned',
-            'comment' => 'Призначено майстра: ' . $master->name,
-            'changed_by' => Auth::id(),
+        return redirect()->route('repairs.show', $repair)->with('success', 'Ви взяли заявку в роботу!');
+    }
+
+    public function updateStatus(Request $request, RepairRequest $repair)
+    {
+        $validated = $request->validate([
+            'status' => 'required|in:assigned,in_progress,completed,cancelled',
         ]);
 
-        Notification::create([
-            'user_id' => $master->id,
-            'repair_request_id' => $repair->id,
-            'type' => 'new_assignment',
-            'message' => 'Вам призначено нову заявку №' . $repair->id,
-            'sent_at' => now(),
+        $repair->update([
+            'status' => $validated['status'],
+            'completed_at' => $validated['status'] === 'completed' ? now() : null,
         ]);
 
-        return redirect()->route('repairs.show', $repair)
-            ->with('success', 'Майстра призначено');
+        if ($validated['status'] === 'completed') {
+            return redirect()->route('repairs.show', $repair)->with('success', 'Роботу завершено! Клієнт може залишити відгук.');
+        }
+
+        return back()->with('success', 'Статус оновлено!');
     }
 }

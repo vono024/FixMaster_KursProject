@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', 'Система управління ремонтами')</title>
+    <title>{{ $title ?? 'Система управління ремонтами' }}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -63,8 +63,6 @@
         .animate-scale-in {
             animation: scaleIn 0.3s ease-out;
         }
-
-        /* Smooth transitions */
         * {
             transition-property: background-color, border-color, color, fill, stroke;
             transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
@@ -81,6 +79,14 @@
 </head>
 <body class="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-slate-900 min-h-screen text-gray-900 dark:text-gray-100 transition-colors duration-300">
 @include('layouts.navigation')
+
+@if (isset($header))
+    <header class="bg-white dark:bg-gray-800 shadow">
+        <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+            {{ $header }}
+        </div>
+    </header>
+@endif
 
 <main class="py-8 animate-fade-in">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -124,7 +130,7 @@
             </div>
         @endif
 
-        @yield('content')
+        {{ $slot }}
     </div>
 </main>
 

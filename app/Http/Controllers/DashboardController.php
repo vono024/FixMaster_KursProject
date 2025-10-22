@@ -5,67 +5,110 @@ namespace App\Http\Controllers;
 use App\Models\RepairRequest;
 use App\Models\User;
 use App\Models\Review;
-use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class DashboardController extends Controller
 {
+    public function index()
+    {
+        $user = auth()->user();
+
+        if ($user->role === 'client') {
+            return $this->clientDashboard();
+        } elseif ($user->role === 'master') {
+            return $this->masterDashboard();
+        } elseif ($user->role === 'admin') {
+            return $this->adminDashboard();
+        }
+
+        return redirect()->route('home');
+    }
+
     public function clientDashboard()
     {
-        $activeRequests = RepairRequest::where('client_id', auth()->id())
-            ->whereIn('status', ['new', 'in_progress'])
+        $user = auth()->user();
+
+        $activeRequests = RepairRequest::where('client_id', $user->id)
+            ->whereIn('status', ['new', 'assigned', 'in_progress'])
             ->with('master')
+            ->latest()
             ->get();
 
-        $recentRequests = RepairRequest::where('client_id', auth()->id())
-            ->orderBy('created_at', 'desc')
-            ->limit(5)
-            ->get();
+        $completedRequests = RepairRequest::where('client_id', $user->id)
+            ->where('status', 'completed')
+            ->count();
 
-        return view('dashboard.client', compact('activeRequests', 'recentRequests'));
+        $pendingReviews = RepairRequest::where('client_id', $user->id)
+            ->where('status', 'completed')
+            ->doesntHave('review')
+            ->count();
+
+        return view('dashboard.client', compact('activeRequests', 'completedRequests', 'pendingReviews'));
     }
 
     public function masterDashboard()
     {
-        $assignedRequests = RepairRequest::where('master_id', auth()->id())
-            ->whereIn('status', ['in_progress'])
+        $user = auth()->user();
+
+        $assignedRequests = RepairRequest::where('master_id', $user->id)
+            ->whereIn('status', ['assigned', 'in_progress'])
             ->with('client')
+            ->latest()
             ->get();
 
-        $newRequests = RepairRequest::where('status', 'new')
-            ->whereNull('master_id')
-            ->get();
-
-        $completedToday = RepairRequest::where('master_id', auth()->id())
+        $completedCount = RepairRequest::where('master_id', $user->id)
             ->where('status', 'completed')
-            ->whereDate('completed_at', today())
             ->count();
 
-        $avgRating = Review::where('master_id', auth()->id())->avg('rating');
+        $completedToday = RepairRequest::where('master_id', $user->id)
+            ->where('status', 'completed')
+            ->whereDate('updated_at', Carbon::today())
+            ->count();
 
-        return view('dashboard.master', compact('assignedRequests', 'newRequests', 'completedToday', 'avgRating'));
+        $averageRating = Review::whereHas('repairRequest', function($query) use ($user) {
+            $query->where('master_id', $user->id);
+        })->avg('rating') ?? 0;
+
+        $newRequests = RepairRequest::where('status', 'new')
+            ->with('client')
+            ->latest()
+            ->take(5)
+            ->get();
+
+        return view('dashboard.master', compact('assignedRequests', 'completedCount', 'completedToday', 'averageRating', 'newRequests'));
     }
 
     public function adminDashboard()
     {
         $totalRequests = RepairRequest::count();
-        $activeRequests = RepairRequest::whereIn('status', ['new', 'in_progress'])->count();
+        $activeRequests = RepairRequest::whereIn('status', ['new', 'assigned', 'in_progress'])->count();
         $completedRequests = RepairRequest::where('status', 'completed')->count();
 
-        $totalMasters = User::where('role', 'master')->count();
         $totalClients = User::where('role', 'client')->count();
+        $totalMasters = User::where('role', 'master')->count();
 
         $recentRequests = RepairRequest::with(['client', 'master'])
-            ->orderBy('created_at', 'desc')
-            ->limit(10)
+            ->latest()
+            ->take(10)
+            ->get();
+
+        $topMasters = User::where('role', 'master')
+            ->withCount(['assignedRepairs as completed_count' => function($query) {
+                $query->where('status', 'completed');
+            }])
+            ->orderByDesc('completed_count')
+            ->take(5)
             ->get();
 
         return view('dashboard.admin', compact(
             'totalRequests',
             'activeRequests',
             'completedRequests',
-            'totalMasters',
             'totalClients',
-            'recentRequests'
+            'totalMasters',
+            'recentRequests',
+            'topMasters'
         ));
     }
 }

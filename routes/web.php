@@ -8,6 +8,7 @@ use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\MessageController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -15,23 +16,16 @@ Route::get('/', function () {
 })->name('home');
 
 Route::middleware('auth')->group(function () {
-    Route::get('/dashboard', function () {
-        $user = auth()->user();
-
-        if ($user->role === 'client') {
-            return app(DashboardController::class)->clientDashboard();
-        } elseif ($user->role === 'master') {
-            return app(DashboardController::class)->masterDashboard();
-        } elseif ($user->role === 'admin') {
-            return app(DashboardController::class)->adminDashboard();
-        }
-
-        return redirect()->route('home');
-    })->name('dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile/avatar', [ProfileController::class, 'deleteAvatar'])->name('profile.delete-avatar');
+    Route::get('/profile/change-password', [ProfileController::class, 'changePasswordForm'])->name('profile.change-password-form');
     Route::post('/profile/change-password', [ProfileController::class, 'changePassword'])->name('profile.change-password');
+
+    Route::get('/master/setup', [MasterController::class, 'setupForm'])->name('master.setup')->middleware('role:master');
+    Route::post('/master/update-profile', [MasterController::class, 'updateProfile'])->name('master.update-profile')->middleware('role:master');
 
     Route::resource('repairs', RepairRequestController::class);
     Route::post('/repairs/{repair}/assign', [RepairRequestController::class, 'assign'])->name('repairs.assign')->middleware('role:master,admin');
@@ -39,11 +33,14 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/masters', [MasterController::class, 'index'])->name('masters.index');
     Route::get('/masters/{master}', [MasterController::class, 'show'])->name('masters.show');
-    Route::post('/master/update-profile', [MasterController::class, 'updateProfile'])->name('master.update-profile')->middleware('role:master');
 
     Route::post('/repairs/{repairRequest}/reviews', [ReviewController::class, 'store'])->name('reviews.store')->middleware('role:client');
     Route::get('/reviews', [ReviewController::class, 'index'])->name('reviews.index');
     Route::get('/masters/{master}/reviews', [ReviewController::class, 'getMasterReviews'])->name('reviews.master');
+
+    Route::get('/messages', [MessageController::class, 'index'])->name('messages.index');
+    Route::get('/messages/repair/{repair}', [MessageController::class, 'show'])->name('messages.show');
+    Route::post('/messages/repair/{repair}', [MessageController::class, 'store'])->name('messages.store');
 
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
     Route::post('/notifications/{notification}/mark-read', [NotificationController::class, 'markAsRead'])->name('notifications.mark-read');

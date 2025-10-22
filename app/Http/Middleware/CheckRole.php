@@ -14,10 +14,8 @@ class CheckRole
             return redirect()->route('login');
         }
 
-        $userRole = auth()->user()->role;
-
-        if (!in_array($userRole, $roles)) {
-            abort(403, 'Немає доступу');
+        if (!in_array(auth()->user()->role, $roles)) {
+            abort(403, 'У вас немає доступу до цієї сторінки.');
         }
 
         return $next($request);

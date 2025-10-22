@@ -12,28 +12,17 @@ class RepairRequest extends Model
     protected $fillable = [
         'client_id',
         'master_id',
+        'title',
+        'description',
         'device_type',
-        'device_brand',
-        'device_model',
-        'problem_description',
         'status',
-        'priority',
-        'estimated_cost',
-        'final_cost',
-        'estimated_completion_date',
-        'actual_completion_date',
-        'client_address',
-        'photos',
+        'scheduled_date',
         'completed_at',
     ];
 
     protected $casts = [
-        'photos' => 'array',
-        'estimated_completion_date' => 'date',
-        'actual_completion_date' => 'date',
+        'scheduled_date' => 'datetime',
         'completed_at' => 'datetime',
-        'estimated_cost' => 'decimal:2',
-        'final_cost' => 'decimal:2',
     ];
 
     public function client()
@@ -46,11 +35,6 @@ class RepairRequest extends Model
         return $this->belongsTo(User::class, 'master_id');
     }
 
-    public function statuses()
-    {
-        return $this->hasMany(RepairStatus::class);
-    }
-
     public function review()
     {
         return $this->hasOne(Review::class);
@@ -61,33 +45,18 @@ class RepairRequest extends Model
         return $this->hasMany(Notification::class);
     }
 
-    public function scopeNew($query)
+    public function messages()
     {
-        return $query->where('status', 'new');
+        return $this->hasMany(Message::class);
     }
 
-    public function scopeAssigned($query)
+    public function canBeEditedBy(User $user)
     {
-        return $query->where('status', 'assigned');
+        return $this->client_id === $user->id && in_array($this->status, ['new', 'assigned']);
     }
 
-    public function scopeInProgress($query)
+    public function canBeDeletedBy(User $user)
     {
-        return $query->where('status', 'in_progress');
-    }
-
-    public function scopeCompleted($query)
-    {
-        return $query->where('status', 'completed');
-    }
-
-    public function isEditable(): bool
-    {
-        return in_array($this->status, ['new', 'assigned']);
-    }
-
-    public function canBeReviewed(): bool
-    {
-        return $this->status === 'completed' && !$this->review;
+        return $this->client_id === $user->id && $this->status === 'new';
     }
 }

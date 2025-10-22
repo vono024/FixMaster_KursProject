@@ -8,22 +8,30 @@ class UpdateRepairRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return auth()->check();
+        return auth()->check() && auth()->user()->role === 'client';
     }
 
     public function rules(): array
     {
-        $rules = [
-            'problem_description' => 'sometimes|string|min:10',
-            'priority' => 'sometimes|in:low,medium,high',
+        return [
+            'title' => 'required|string|max:255',
+            'description' => 'required|string|max:2000',
+            'device_type' => 'required|string|max:500',
+            'scheduled_date' => 'nullable|date|after:today',
         ];
+    }
 
-        if (auth()->user()->role === 'master' || auth()->user()->role === 'admin') {
-            $rules['status'] = 'sometimes|in:new,in_progress,completed,closed';
-            $rules['estimated_cost'] = 'nullable|numeric|min:0';
-            $rules['final_cost'] = 'nullable|numeric|min:0';
-        }
-
-        return $rules;
+    public function messages(): array
+    {
+        return [
+            'title.required' => 'Назва заявки обов\'язкова',
+            'title.max' => 'Назва не може бути довшою за 255 символів',
+            'description.required' => 'Опис проблеми обов\'язковий',
+            'description.max' => 'Опис не може бути довшим за 2000 символів',
+            'device_type.required' => 'Тип пристрою обов\'язковий',
+            'device_type.max' => 'Тип пристрою не може бути довшим за 500 символів',
+            'scheduled_date.date' => 'Некоректна дата',
+            'scheduled_date.after' => 'Дата має бути в майбутньому',
+        ];
     }
 }

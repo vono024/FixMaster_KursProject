@@ -183,9 +183,8 @@
                     <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg p-6 mb-6">
                         <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">Клієнт</h3>
                         <div class="flex items-center mb-3">
-                            <img src="{{ $repair->client->avatar_url }}" alt="{{ $repair->client->name }}"
-                                 class="w-12 h-12 rounded-full mr-3">
-                            <div>
+                            <x-user-avatar :user="$repair->client" size="lg" />
+                            <div class="ml-3">
                                 <p class="font-semibold text-gray-800 dark:text-gray-200">{{ $repair->client->name }}</p>
                                 @if($repair->client->phone)
                                     <p class="text-sm text-gray-600 dark:text-gray-400">{{ $repair->client->phone }}</p>
@@ -198,9 +197,8 @@
                         <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg p-6 mb-6">
                             <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">Майстер</h3>
                             <div class="flex items-center mb-3">
-                                <img src="{{ $repair->master->avatar_url }}" alt="{{ $repair->master->name }}"
-                                     class="w-12 h-12 rounded-full mr-3">
-                                <div>
+                                <x-user-avatar :user="$repair->master" size="lg" />
+                                <div class="ml-3">
                                     <p class="font-semibold text-gray-800 dark:text-gray-200">{{ $repair->master->name }}</p>
                                     @if($repair->master->specialization)
                                         <p class="text-sm text-gray-600 dark:text-gray-400">{{ $repair->master->specialization }}</p>

@@ -30,11 +30,34 @@ class MasterController extends Controller
 
         $averageRating = $master->receivedReviews->avg('rating') ?? 0;
 
-        // Прямий запит до бази
         $completedCount = \App\Models\RepairRequest::where('master_id', $master->id)
             ->where('status', 'completed')
             ->count();
 
         return view('masters.show', compact('master', 'averageRating', 'completedCount'));
+    }
+
+    public function setupForm()
+    {
+        return view('profile.master-setup');
+    }
+
+    public function updateProfile(Request $request)
+    {
+        $request->validate([
+            'specialization' => 'required|string|max:255',
+            'bio' => 'required|string|min:50',
+            'hourly_rate' => 'required|numeric|min:0',
+            'phone' => 'required|string|max:20',
+        ]);
+
+        $user = $request->user();
+        $user->specialization = $request->specialization;
+        $user->bio = $request->bio;
+        $user->hourly_rate = $request->hourly_rate;
+        $user->phone = $request->phone;
+        $user->save();
+
+        return redirect()->route('dashboard')->with('success', 'Профіль успішно налаштовано');
     }
 }

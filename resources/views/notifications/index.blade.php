@@ -1,8 +1,4 @@
-@extends('layouts.app')
-
-@section('title', 'Повідомлення')
-
-@section('content')
+<x-app-layout>
     <div class="mb-8 flex flex-col md:flex-row md:justify-between md:items-center gap-4 animate-slide-down">
         <div>
             <h1 class="text-4xl font-black text-gray-900 dark:text-white mb-2">Повідомлення</h1>
@@ -109,4 +105,4 @@
             {{ $notifications->links() }}
         </div>
     @endif
-@endsection
+</x-app-layout>

@@ -12,14 +12,18 @@ return new class extends Migration
             $table->id();
             $table->foreignId('client_id')->constrained('users')->onDelete('cascade');
             $table->foreignId('master_id')->nullable()->constrained('users')->onDelete('set null');
+
+            $table->string('title');
+            $table->text('description');
             $table->string('device_type', 100);
+
             $table->string('device_brand', 100)->nullable();
             $table->string('device_model', 100)->nullable();
-            $table->text('problem_description');
             $table->enum('status', ['new', 'assigned', 'in_progress', 'completed', 'closed', 'cancelled'])->default('new');
             $table->enum('priority', ['low', 'medium', 'high'])->default('medium');
             $table->decimal('estimated_cost', 10, 2)->nullable();
             $table->decimal('final_cost', 10, 2)->nullable();
+            $table->timestamp('scheduled_date')->nullable(); // Додаємо scheduled_date
             $table->date('estimated_completion_date')->nullable();
             $table->date('actual_completion_date')->nullable();
             $table->text('client_address')->nullable();

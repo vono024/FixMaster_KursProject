@@ -79,7 +79,6 @@
                             </div>
                         @endif
                     </div>
-
                     @if($repair->status === 'completed' && !$repair->review && auth()->user()->role === 'client' && $repair->client_id === auth()->id())
                         <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg p-6 mb-6">
                             <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">Залишити відгук</h3>

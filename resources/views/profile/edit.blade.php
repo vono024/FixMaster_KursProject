@@ -18,9 +18,7 @@
                         </label>
                         <div class="flex items-center space-x-6">
                             <div class="shrink-0">
-                                <img class="h-24 w-24 object-cover rounded-full"
-                                     src="{{ $user->avatar_url }}"
-                                     alt="Аватар">
+                                <x-user-avatar :user="$user" size="2xl" />
                             </div>
                             <div>
                                 <input type="file" name="avatar" id="avatar" class="block w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-gray-700 dark:file:text-gray-300">

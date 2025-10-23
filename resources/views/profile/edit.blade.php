@@ -6,37 +6,50 @@
     </x-slot>
 
     <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg p-6">
-                <form method="POST" action="{{ route('profile.update') }}" enctype="multipart/form-data">
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">Фото профілю</h3>
+                <div class="flex items-center space-x-6">
+                    <div class="shrink-0">
+                        <x-user-avatar :user="$user" size="2xl" />
+                    </div>
+                    <div>
+                        <form method="POST" action="{{ route('profile.update') }}" enctype="multipart/form-data" id="avatar-form">
+                            @csrf
+                            @method('PATCH')
+                            <input type="hidden" name="name" value="{{ $user->name }}">
+                            <input type="hidden" name="email" value="{{ $user->email }}">
+                            <input type="hidden" name="phone" value="{{ $user->phone ?? '' }}">
+                            @if($user->role === 'master')
+                                <input type="hidden" name="specialization" value="{{ $user->specialization ?? '' }}">
+                                <input type="hidden" name="bio" value="{{ $user->bio ?? '' }}">
+                                <input type="hidden" name="hourly_rate" value="{{ $user->hourly_rate ?? '' }}">
+                            @endif
+
+                            <input type="file" name="avatar" id="avatar" accept="image/*"
+                                   class="block w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-gray-700 dark:file:text-gray-300"
+                                   onchange="this.form.submit()">
+                            @error('avatar')
+                            <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                            @enderror
+                        </form>
+
+                        @if($user->avatar)
+                            <form method="POST" action="{{ route('profile.delete-avatar') }}" class="mt-2" onsubmit="return confirm('Видалити фото?')">
+                                @csrf
+                                <button type="submit" class="text-red-600 dark:text-red-400 text-sm hover:text-red-800 dark:hover:text-red-300 underline">
+                                    Видалити фото
+                                </button>
+                            </form>
+                        @endif
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg p-6">
+                <form method="POST" action="{{ route('profile.update') }}">
                     @csrf
                     @method('PATCH')
-
-                    <div class="mb-6">
-                        <label class="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">
-                            Фото профілю
-                        </label>
-                        <div class="flex items-center space-x-6">
-                            <div class="shrink-0">
-                                <x-user-avatar :user="$user" size="2xl" />
-                            </div>
-                            <div>
-                                <input type="file" name="avatar" id="avatar" class="block w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-gray-700 dark:file:text-gray-300">
-                                @if($user->avatar)
-                                    <form method="POST" action="{{ route('profile.delete-avatar') }}" class="mt-2" onsubmit="return confirm('Видалити фото?')">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="text-red-600 dark:text-red-400 text-sm hover:text-red-800 dark:hover:text-red-300">
-                                            Видалити фото
-                                        </button>
-                                    </form>
-                                @endif
-                            </div>
-                        </div>
-                        @error('avatar')
-                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
-                        @enderror
-                    </div>
 
                     <div class="mb-4">
                         <label for="name" class="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">

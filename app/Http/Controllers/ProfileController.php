@@ -7,6 +7,7 @@ use App\Http\Requests\ChangePasswordRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rules\Password;
 
 class ProfileController extends Controller
 {
@@ -53,15 +54,40 @@ class ProfileController extends Controller
         return redirect()->route('profile.show')->with('success', 'Пароль змінено!');
     }
 
-    public function deleteAvatar()
+    public function deleteAvatar(Request $request)
     {
-        $user = auth()->user();
+        try {
+            $user = $request->user();
 
-        if ($user->avatar) {
-            Storage::disk('public')->delete($user->avatar);
-            $user->update(['avatar' => null]);
+            \Log::info('Спроба видалити аватар', ['user_id' => $user->id, 'avatar' => $user->avatar]);
+
+            if ($user->avatar) {
+                if (\Storage::disk('public')->exists($user->avatar)) {
+                    \Storage::disk('public')->delete($user->avatar);
+                    \Log::info('Файл видалено', ['path' => $user->avatar]);
+                } else {
+                    \Log::warning('Файл не знайдено', ['path' => $user->avatar]);
+                }
+
+                $user->avatar = null;
+                $user->save();
+
+                \Log::info('Аватар видалено з бази');
+
+                return redirect()->route('profile.edit')->with('success', 'Фото профілю видалено');
+            }
+
+            return redirect()->route('profile.edit')->with('info', 'Немає фото для видалення');
+
+        } catch (\Exception $e) {
+            \Log::error('Помилка видалення аватара', ['error' => $e->getMessage()]);
+            return redirect()->route('profile.edit')->with('error', 'Помилка: ' . $e->getMessage());
         }
+    }
 
-        return back()->with('success', 'Аватар видалено!');
+    public function edit(Request $request)
+    {
+        $user = $request->user();
+        return view('profile.edit', compact('user'));
     }
 }

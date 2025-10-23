@@ -3,8 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
-use App\Models\Review;
-use App\Http\Requests\UpdateMasterProfileRequest;
 use Illuminate\Http\Request;
 
 class MasterController extends Controller
@@ -12,11 +10,11 @@ class MasterController extends Controller
     public function index()
     {
         $masters = User::where('role', 'master')
-            ->where('profile_completed', true)
-            ->withCount(['assignedRepairs as completed_count' => function($query) {
-                $query->where('status', 'completed');
-            }])
+            ->whereNotNull('specialization')
+            ->whereNotNull('bio')
+            ->withCount('receivedReviews')
             ->withAvg('receivedReviews', 'rating')
+            ->orderBy('created_at', 'desc')
             ->paginate(12);
 
         return view('masters.index', compact('masters'));
@@ -28,41 +26,15 @@ class MasterController extends Controller
             abort(404);
         }
 
-        $master->load(['receivedReviews.client', 'assignedRepairs']);
+        $master->load('receivedReviews.client', 'receivedReviews.repairRequest');
 
-        $completedCount = $master->assignedRepairs()->where('status', 'completed')->count();
-        $averageRating = $master->receivedReviews()->avg('rating') ?? 0;
+        $averageRating = $master->receivedReviews->avg('rating') ?? 0;
 
-        return view('masters.show', compact('master', 'completedCount', 'averageRating'));
-    }
+        // Прямий запит до бази
+        $completedCount = \App\Models\RepairRequest::where('master_id', $master->id)
+            ->where('status', 'completed')
+            ->count();
 
-    public function setupForm()
-    {
-        $user = auth()->user();
-
-        if ($user->role !== 'master') {
-            abort(403);
-        }
-
-        return view('profile.master-setup');
-    }
-
-    public function updateProfile(UpdateMasterProfileRequest $request)
-    {
-        $user = auth()->user();
-
-        if ($user->role !== 'master') {
-            abort(403);
-        }
-
-        $user->update([
-            'specialization' => $request->specialization,
-            'bio' => $request->bio,
-            'hourly_rate' => $request->hourly_rate,
-            'phone' => $request->phone,
-            'profile_completed' => true,
-        ]);
-
-        return redirect()->route('dashboard')->with('success', 'Профіль майстра налаштовано!');
+        return view('masters.show', compact('master', 'averageRating', 'completedCount'));
     }
 }

@@ -7,17 +7,70 @@ use Illuminate\Http\Request;
 
 class MasterController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $masters = User::where('role', 'master')
+        $query = User::where('role', 'master')
             ->whereNotNull('specialization')
-            ->whereNotNull('bio')
-            ->withCount('receivedReviews')
-            ->withAvg('receivedReviews', 'rating')
-            ->orderBy('created_at', 'desc')
-            ->paginate(12);
+            ->whereNotNull('bio');
 
-        return view('masters.index', compact('masters'));
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('specialization', 'like', "%{$search}%")
+                    ->orWhere('bio', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->filled('specialization')) {
+            $query->where('specialization', 'like', "%{$request->specialization}%");
+        }
+
+        if ($request->filled('max_rate')) {
+            $query->where('hourly_rate', '<=', $request->max_rate);
+        }
+
+        $query->withCount('receivedReviews')
+            ->addSelect([
+                'completed_count' => \DB::table('repair_requests')
+                    ->selectRaw('COUNT(*)')
+                    ->whereColumn('master_id', 'users.id')
+                    ->where('status', 'completed')
+            ])
+            ->withAvg('receivedReviews', 'rating');
+
+        switch ($request->input('sort', 'rating')) {
+            case 'rating':
+                $query->orderByDesc('received_reviews_avg_rating')
+                    ->orderByDesc('received_reviews_count');
+                break;
+            case 'reviews':
+                $query->orderByDesc('received_reviews_count');
+                break;
+            case 'completed':
+                $query->orderByDesc('completed_count');
+                break;
+            case 'price_low':
+                $query->orderBy('hourly_rate', 'asc');
+                break;
+            case 'price_high':
+                $query->orderByDesc('hourly_rate');
+                break;
+            case 'name':
+                $query->orderBy('name', 'asc');
+                break;
+            default:
+                $query->orderByDesc('created_at');
+        }
+
+        $masters = $query->paginate(12)->withQueryString();
+
+        $specializations = User::where('role', 'master')
+            ->whereNotNull('specialization')
+            ->distinct()
+            ->pluck('specialization');
+
+        return view('masters.index', compact('masters', 'specializations'));
     }
 
     public function show(User $master)
@@ -29,7 +82,6 @@ class MasterController extends Controller
         $master->load('receivedReviews.client', 'receivedReviews.repairRequest');
 
         $averageRating = $master->receivedReviews->avg('rating') ?? 0;
-
         $completedCount = \App\Models\RepairRequest::where('master_id', $master->id)
             ->where('status', 'completed')
             ->count();

@@ -10,16 +10,19 @@ class MessageController extends Controller
 {
     public function index()
     {
-        $user = auth()->user();
+        $repairRequests = \App\Models\RepairRequest::where(function($query) {
+            if (auth()->user()->role === 'client') {
+                $query->where('client_id', auth()->id());
+            } else {
+                $query->where('master_id', auth()->id());
+            }
+        })
+            ->whereNotNull('master_id')
+            ->with(['client', 'master', 'messages'])
+            ->orderBy('updated_at', 'desc')
+            ->paginate(10);
 
-        $conversations = Message::where('sender_id', $user->id)
-            ->orWhere('receiver_id', $user->id)
-            ->with(['repairRequest', 'sender', 'receiver'])
-            ->latest()
-            ->get()
-            ->groupBy('repair_request_id');
-
-        return view('messages.index', compact('conversations'));
+        return view('messages.index', compact('repairRequests'));
     }
 
     public function show(RepairRequest $repair)

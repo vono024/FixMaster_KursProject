@@ -82,4 +82,9 @@ class User extends Authenticatable
         }
         return null;
     }
+
+    public function masterRepairs()
+    {
+        return $this->hasMany(RepairRequest::class, 'master_id');
+    }
 }

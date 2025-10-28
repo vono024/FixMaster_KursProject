@@ -12,8 +12,7 @@
                     <div class="border-b border-gray-200 dark:border-gray-700 py-4 last:border-b-0">
                         <div class="flex items-start justify-between mb-2">
                             <div class="flex items-center">
-                                <img src="{{ $review->client->avatar_url }}" alt="{{ $review->client->name }}"
-                                     class="w-12 h-12 rounded-full mr-4">
+                                <x-user-avatar :user="$review->client" size="lg" class="mr-4" />
                                 <div>
                                     <p class="font-semibold text-gray-800 dark:text-gray-200">{{ $review->client->name }}</p>
                                     <p class="text-sm text-gray-600 dark:text-gray-400">
@@ -38,7 +37,6 @@
                 @empty
                     <p class="text-gray-500 dark:text-gray-400 text-center py-8">Відгуків поки немає</p>
                 @endforelse
-
                 @if($reviews->hasPages())
                     <div class="mt-6">
                         {{ $reviews->links() }}

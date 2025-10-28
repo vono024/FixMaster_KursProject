@@ -86,11 +86,53 @@
 
                         <div x-show="open" @click.away="open = false" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="transform opacity-0 scale-95" x-transition:enter-end="transform opacity-100 scale-100" x-transition:leave="transition ease-in duration-75" x-transition:leave-start="transform opacity-100 scale-100" x-transition:leave-end="transform opacity-0 scale-95" class="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 z-50" style="display: none;">
                             <div class="py-1">
+                                <div class="md:hidden">
+                                    <a href="{{ route('dashboard') }}" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+                                        Головна
+                                    </a>
+
+                                    @if(auth()->user()->role === 'client')
+                                        <a href="{{ route('repairs.index') }}" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+                                            Мої заявки
+                                        </a>
+                                        <a href="{{ route('repairs.create') }}" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+                                            Створити заявку
+                                        </a>
+                                        <a href="{{ route('masters.index') }}" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+                                            Майстри
+                                        </a>
+                                    @endif
+
+                                    @if(auth()->user()->role === 'master')
+                                        <a href="{{ route('repairs.index') }}" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+                                            Заявки
+                                        </a>
+                                        <a href="{{ route('reviews.index') }}" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+                                            Відгуки
+                                        </a>
+                                    @endif
+
+                                    @if(auth()->user()->role === 'admin')
+                                        <a href="{{ route('repairs.index') }}" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+                                            Заявки
+                                        </a>
+                                        <a href="{{ route('masters.index') }}" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+                                            Майстри
+                                        </a>
+                                        <a href="{{ route('reports.statistics') }}" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+                                            Звіти
+                                        </a>
+                                    @endif
+
+                                    <a href="{{ route('messages.index') }}" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+                                        Повідомлення
+                                    </a>
+
+                                    <div class="border-t border-gray-100 dark:border-gray-700"></div>
+                                </div>
+
                                 <a href="{{ route('profile.show') }}" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition">
                                     Профіль
-                                </a>
-                                <a href="{{ route('notifications.index') }}" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition">
-                                    Сповіщення
                                 </a>
                                 <form method="POST" action="{{ route('logout') }}">
                                     @csrf

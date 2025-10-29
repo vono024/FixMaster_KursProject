@@ -15,14 +15,26 @@ class RepairRequest extends Model
         'title',
         'description',
         'device_type',
+        'device_brand',
+        'device_model',
         'status',
+        'priority',
+        'estimated_cost',
+        'final_cost',
         'scheduled_date',
+        'estimated_completion_date',
+        'actual_completion_date',
+        'client_address',
+        'photos',
         'completed_at',
     ];
 
     protected $casts = [
-        'scheduled_date' => 'datetime',
         'completed_at' => 'datetime',
+        'scheduled_date' => 'datetime',
+        'estimated_cost' => 'decimal:2',
+        'final_cost' => 'decimal:2',
+        'photos' => 'array',
     ];
 
     public function client()
@@ -35,9 +47,19 @@ class RepairRequest extends Model
         return $this->belongsTo(User::class, 'master_id');
     }
 
+    public function statuses()
+    {
+        return $this->hasMany(RepairStatus::class);
+    }
+
+    public function reviews()
+    {
+        return $this->hasMany(Review::class, 'repair_request_id');
+    }
+
     public function review()
     {
-        return $this->hasOne(Review::class);
+        return $this->hasOne(Review::class, 'repair_request_id');
     }
 
     public function notifications()
@@ -50,13 +72,29 @@ class RepairRequest extends Model
         return $this->hasMany(Message::class);
     }
 
-    public function canBeEditedBy(User $user)
+    public function canBeEditedBy($user)
     {
-        return $this->client_id === $user->id && in_array($this->status, ['new', 'assigned']);
+        if ($user->role === 'admin') {
+            return true;
+        }
+
+        if ($user->role === 'client' && $this->client_id === $user->id) {
+            return in_array($this->status, ['new', 'assigned']);
+        }
+
+        return false;
     }
 
-    public function canBeDeletedBy(User $user)
+    public function canBeDeletedBy($user)
     {
-        return $this->client_id === $user->id && $this->status === 'new';
+        if ($user->role === 'admin') {
+            return true;
+        }
+
+        if ($user->role === 'client' && $this->client_id === $user->id) {
+            return $this->status === 'new';
+        }
+
+        return false;
     }
 }

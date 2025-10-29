@@ -48,8 +48,10 @@ class RepairRequestController extends Controller
             'title' => $request->title,
             'description' => $request->description,
             'device_type' => $request->device_type,
-            'scheduled_date' => $request->scheduled_date,
+            'device_brand' => null,
+            'device_model' => null,
             'status' => 'new',
+            'scheduled_date' => $request->scheduled_date,
         ]);
 
         return redirect()->route('repairs.show', $repair)->with('success', 'Заявку створено успішно!');

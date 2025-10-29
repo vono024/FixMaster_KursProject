@@ -100,12 +100,6 @@
                     </div>
                 </div>
             </div>
-
-            <p class="text-center text-sm text-gray-600 dark:text-gray-400">
-                Тестові акаунти: admin@repair.com / master1@repair.com / client1@repair.com
-                <br>
-                Пароль: <span class="font-mono font-bold">password</span>
-            </p>
         </div>
     </div>
 </x-app-layout>

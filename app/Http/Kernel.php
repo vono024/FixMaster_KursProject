@@ -42,6 +42,15 @@ class Kernel extends HttpKernel
         'signed' => \App\Http\Middleware\ValidateSignature::class,
         'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
-        'role' => \App\Http\Middleware\CheckRole::class,
+        'admin' => \App\Http\Middleware\AdminMiddleware::class,
     ];
 }
+
+/*
+Виправ метод з приводу фотографії(скрін 1)
+В вкладці сповіщення теж саме з методом фотографії виправити(скрін 2)
+Виправ помилку перегляду користувачів(скрін 3)
+Виправ помилку перегляду звітності (скрін 4)
+Виправ момент при переході на світлий режим не видно іконку переходу на темний, іконка має переходу на темний має виглядати так, місяць обведений чорним контуром
+*код виводиш у повному вигляді, без коментарів, те що я не просив змінювати ти не змінюй, де потрібно створити файл ти дописуй команду для створення
+*/

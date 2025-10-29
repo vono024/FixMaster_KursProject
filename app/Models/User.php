@@ -14,13 +14,12 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'role',
         'phone',
+        'role',
         'specialization',
         'bio',
         'hourly_rate',
         'avatar',
-        'profile_completed',
     ];
 
     protected $hidden = [
@@ -28,16 +27,31 @@ class User extends Authenticatable
         'remember_token',
     ];
 
-    protected $casts = [
-        'email_verified_at' => 'datetime',
-        'password' => 'hashed',
-        'hourly_rate' => 'decimal:2',
-        'profile_completed' => 'boolean',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'email_verified_at' => 'datetime',
+            'blocked_at' => 'datetime',
+            'password' => 'hashed',
+        ];
+    }
 
-    public function clientRepairs()
+    public function getAvatarUrlAttribute()
+    {
+        if ($this->avatar) {
+            return asset('storage/' . $this->avatar);
+        }
+        return null;
+    }
+
+    public function repairRequests()
     {
         return $this->hasMany(RepairRequest::class, 'client_id');
+    }
+
+    public function masterRepairs()
+    {
+        return $this->hasMany(RepairRequest::class, 'master_id');
     }
 
     public function assignedRepairs()
@@ -45,24 +59,14 @@ class User extends Authenticatable
         return $this->hasMany(RepairRequest::class, 'master_id');
     }
 
-    public function givenReviews()
-    {
-        return $this->hasMany(Review::class, 'client_id');
-    }
-
     public function receivedReviews()
     {
         return $this->hasMany(Review::class, 'master_id');
     }
 
-    public function reviews()
+    public function givenReviews()
     {
-        return $this->receivedReviews();
-    }
-
-    public function notifications()
-    {
-        return $this->hasMany(Notification::class);
+        return $this->hasMany(Review::class, 'client_id');
     }
 
     public function sentMessages()
@@ -75,16 +79,23 @@ class User extends Authenticatable
         return $this->hasMany(Message::class, 'receiver_id');
     }
 
-    public function getAvatarUrlAttribute()
+    public function notifications()
     {
-        if ($this->avatar) {
-            return asset('storage/' . $this->avatar);
-        }
-        return null;
+        return $this->hasMany(Notification::class);
     }
 
-    public function masterRepairs()
+    public function isBlocked()
     {
-        return $this->hasMany(RepairRequest::class, 'master_id');
+        return !is_null($this->blocked_at);
+    }
+
+    public function block()
+    {
+        $this->update(['blocked_at' => now()]);
+    }
+
+    public function unblock()
+    {
+        $this->update(['blocked_at' => null]);
     }
 }

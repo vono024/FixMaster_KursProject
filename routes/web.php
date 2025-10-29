@@ -54,4 +54,11 @@ Route::middleware('auth')->group(function () {
     });
 });
 
+Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/users', [AdminController::class, 'users'])->name('users');
+    Route::post('/users/{user}/block', [AdminController::class, 'blockUser'])->name('users.block');
+    Route::post('/users/{user}/unblock', [AdminController::class, 'unblockUser'])->name('users.unblock');
+    Route::get('/reports', [AdminController::class, 'reports'])->name('reports');
+});
+
 require __DIR__.'/auth.php';

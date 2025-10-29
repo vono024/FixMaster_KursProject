@@ -21,7 +21,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
     Route::get('/profile/edit', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::post('/profile/avatar/delete', [ProfileController::class, 'deleteAvatar'])->name('profile.delete-avatar');    Route::get('/profile/change-password', [ProfileController::class, 'changePasswordForm'])->name('profile.change-password-form');
+    Route::post('/profile/avatar/delete', [ProfileController::class, 'deleteAvatar'])->name('profile.delete-avatar');
+    Route::get('/profile/change-password', [ProfileController::class, 'changePasswordForm'])->name('profile.change-password-form');
     Route::post('/profile/change-password', [ProfileController::class, 'changePassword'])->name('profile.change-password');
 
     Route::get('/master/setup', [MasterController::class, 'setupForm'])->name('master.setup')->middleware('role:master');
@@ -47,18 +48,13 @@ Route::middleware('auth')->group(function () {
     Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllAsRead'])->name('notifications.mark-all-read');
 
     Route::middleware('role:admin')->group(function () {
+        Route::get('/admin/users', [DashboardController::class, 'adminDashboard'])->name('admin.users');
+        Route::get('/admin/reports', [ReportController::class, 'generalStats'])->name('admin.reports');
         Route::get('/reports/statistics', [ReportController::class, 'generalStats'])->name('reports.statistics');
         Route::get('/reports/master/{master}', [ReportController::class, 'masterStats'])->name('reports.master-stats');
         Route::get('/reports/client/{client}/history', [ReportController::class, 'clientHistory'])->name('reports.client-history');
         Route::post('/reports/export', [ReportController::class, 'exportReport'])->name('reports.export');
     });
-});
-
-Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
-    Route::get('/users', [AdminController::class, 'users'])->name('users');
-    Route::post('/users/{user}/block', [AdminController::class, 'blockUser'])->name('users.block');
-    Route::post('/users/{user}/unblock', [AdminController::class, 'unblockUser'])->name('users.unblock');
-    Route::get('/reports', [AdminController::class, 'reports'])->name('reports');
 });
 
 require __DIR__.'/auth.php';

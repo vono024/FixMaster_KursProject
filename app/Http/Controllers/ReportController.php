@@ -16,11 +16,14 @@ class ReportController extends Controller
         $completedRequests = RepairRequest::where('status', 'completed')->count();
         $inProgressRequests = RepairRequest::where('status', 'in_progress')->count();
         $newRequests = RepairRequest::where('status', 'new')->count();
+        $assignedRequests = RepairRequest::where('status', 'assigned')->count();
 
         $totalRevenue = RepairRequest::where('status', 'completed')
+            ->whereNotNull('final_cost')
             ->sum('final_cost');
 
         $avgCompletionTime = RepairRequest::where('status', 'completed')
+            ->whereNotNull('completed_at')
             ->selectRaw('AVG(TIMESTAMPDIFF(HOUR, created_at, completed_at)) as avg_time')
             ->first()
             ->avg_time;
@@ -29,18 +32,33 @@ class ReportController extends Controller
             ->withCount(['assignedRepairs as completed_count' => function($query) {
                 $query->where('status', 'completed');
             }])
+            ->with('receivedReviews')
             ->orderBy('completed_count', 'desc')
             ->limit(5)
             ->get();
+
+        $monthlyStats = RepairRequest::selectRaw('MONTH(created_at) as month, COUNT(*) as count')
+            ->whereYear('created_at', Carbon::now()->year)
+            ->groupBy('month')
+            ->orderBy('month')
+            ->get()
+            ->keyBy('month');
+
+        $totalClients = User::where('role', 'client')->count();
+        $totalMasters = User::where('role', 'master')->count();
 
         return view('reports.statistics', compact(
             'totalRequests',
             'completedRequests',
             'inProgressRequests',
             'newRequests',
+            'assignedRequests',
             'totalRevenue',
             'avgCompletionTime',
-            'topMasters'
+            'topMasters',
+            'monthlyStats',
+            'totalClients',
+            'totalMasters'
         ));
     }
 

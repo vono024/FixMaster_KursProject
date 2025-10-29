@@ -41,7 +41,7 @@ class DashboardController extends Controller
 
         $pendingReviews = RepairRequest::where('client_id', $user->id)
             ->where('status', 'completed')
-            ->doesntHave('review')
+            ->doesntHave('reviews')
             ->count();
 
         return view('dashboard.client', compact('activeRequests', 'completedRequests', 'pendingReviews'));
@@ -101,6 +101,8 @@ class DashboardController extends Controller
             ->take(5)
             ->get();
 
+        $users = User::orderBy('created_at', 'desc')->paginate(20);
+
         return view('dashboard.admin', compact(
             'totalRequests',
             'activeRequests',
@@ -108,7 +110,8 @@ class DashboardController extends Controller
             'totalClients',
             'totalMasters',
             'recentRequests',
-            'topMasters'
+            'topMasters',
+            'users'
         ));
     }
 }

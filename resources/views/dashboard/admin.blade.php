@@ -99,7 +99,7 @@
                                         <td class="px-4 py-2 text-sm text-gray-900 dark:text-gray-100">{{ $repair->id }}</td>
                                         <td class="px-4 py-2 text-sm">
                                             <a href="{{ route('repairs.show', $repair) }}" class="text-blue-600 dark:text-blue-400 hover:underline">
-                                                {{ Str::limit($repair->title, 30) }}
+                                                {{ Str::limit($repair->device_type . ' ' . $repair->device_brand, 30) }}
                                             </a>
                                         </td>
                                         <td class="px-4 py-2 text-sm text-gray-900 dark:text-gray-100">{{ $repair->client->name }}</td>
@@ -132,14 +132,12 @@
                             @foreach($topMasters as $master)
                                 <div class="flex items-center justify-between border-b dark:border-gray-700 pb-3 last:border-b-0">
                                     <div class="flex items-center">
-                                        <img src="{{ $master->avatar_url ?? asset('images/default-avatar.png') }}"
-                                             alt="{{ $master->name }}"
-                                             class="w-10 h-10 rounded-full mr-3">
-                                        <div>
+                                        <x-user-avatar :user="$master" size="md" />
+                                        <div class="ml-3">
                                             <a href="{{ route('masters.show', $master) }}" class="font-semibold text-gray-900 dark:text-gray-100 hover:text-blue-600 dark:hover:text-blue-400">
                                                 {{ $master->name }}
                                             </a>
-                                            <p class="text-xs text-gray-500 dark:text-gray-400">{{ $master->specialization }}</p>
+                                            <p class="text-xs text-gray-500 dark:text-gray-400">{{ $master->masterProfile->specialization ?? 'Майстер' }}</p>
                                         </div>
                                     </div>
                                     <div class="text-right">
@@ -148,6 +146,59 @@
                                 </div>
                             @endforeach
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
+                <div class="p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Список користувачів</h3>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                            <thead class="bg-gray-50 dark:bg-gray-700">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Користувач</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Email</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Роль</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Дата реєстрації</th>
+                            </tr>
+                            </thead>
+                            <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                            @forelse($users as $user)
+                                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="flex items-center">
+                                            <x-user-avatar :user="$user" size="sm" />
+                                            <div class="ml-3">
+                                                <p class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ $user->name }}</p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{{ $user->email }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                            <span class="px-2 py-1 text-xs rounded
+                                                @if($user->role === 'admin') bg-red-200 text-red-800 dark:bg-red-900 dark:text-red-200
+                                                @elseif($user->role === 'master') bg-blue-200 text-blue-800 dark:bg-blue-900 dark:text-blue-200
+                                                @else bg-green-200 text-green-800 dark:bg-green-900 dark:text-green-200
+                                                @endif">
+                                                @if($user->role === 'admin') Адміністратор
+                                                @elseif($user->role === 'master') Майстер
+                                                @else Клієнт
+                                                @endif
+                                            </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{{ $user->created_at->format('d.m.Y') }}</td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="4" class="px-6 py-4 text-center text-gray-500 dark:text-gray-400">Немає користувачів</td>
+                                </tr>
+                            @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="mt-4">
+                        {{ $users->links() }}
                     </div>
                 </div>
             </div>

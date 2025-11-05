@@ -42,7 +42,7 @@
                                         @endif
                                     </div>
                                 </div>
-                                <div class="ml-4">
+                                <div class="ml-4 flex items-center space-x-2">
                                     <span class="px-3 py-1 rounded-full text-sm font-semibold whitespace-nowrap
                                         @if($repair->status === 'new') bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200
                                         @elseif($repair->status === 'assigned') bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200
@@ -57,6 +57,31 @@
                                         @else Скасовано
                                         @endif
                                     </span>
+
+                                    {{-- Кнопки редагування та видалення для клієнта --}}
+                                    @if(auth()->user()->role === 'client' && $repair->client_id === auth()->id())
+                                        <div class="flex space-x-1">
+                                            @if($repair->canBeEditedBy(auth()->user()))
+                                                <a href="{{ route('repairs.edit', $repair) }}"
+                                                   class="bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-1 px-3 rounded text-sm"
+                                                   title="Редагувати">
+                                                    ✏️
+                                                </a>
+                                            @endif
+
+                                            @if($repair->canBeDeletedBy(auth()->user()))
+                                                <form method="POST" action="{{ route('repairs.destroy', $repair) }}" onsubmit="return confirm('Ви впевнені, що хочете видалити цю заявку?')" class="inline">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit"
+                                                            class="bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-3 rounded text-sm"
+                                                            title="Видалити">
+                                                        🗑️
+                                                    </button>
+                                                </form>
+                                            @endif
+                                        </div>
+                                    @endif
                                 </div>
                             </div>
                         </div>

@@ -38,6 +38,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/repairs/{repairRequest}/reviews', [ReviewController::class, 'store'])->name('reviews.store')->middleware('role:client');
     Route::get('/reviews', [ReviewController::class, 'index'])->name('reviews.index');
     Route::get('/masters/{master}/reviews', [ReviewController::class, 'getMasterReviews'])->name('reviews.master');
+    Route::post('/repairs/{repair}/reject', [RepairRequestController::class, 'reject'])->name('repairs.reject')->middleware('role:master');
 
     Route::get('/messages', [MessageController::class, 'index'])->name('messages.index');
     Route::get('/messages/repair/{repair}', [MessageController::class, 'show'])->name('messages.show');

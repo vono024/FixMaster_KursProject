@@ -246,6 +246,20 @@
                                 </button>
                             </form>
                         </div>
+
+                        <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg p-6">
+                            <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">Відмовитись від заявки</h3>
+                            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                                Заявка повернеться в список доступних для інших майстрів
+                            </p>
+                            <form method="POST" action="{{ route('repairs.reject', $repair) }}" onsubmit="return confirm('Ви впевнені, що хочете відмовитись від цієї заявки?')">
+                                @csrf
+                                <button type="submit"
+                                        class="w-full bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">
+                                    Відмовитись від заявки
+                                </button>
+                            </form>
+                        </div>
                     @endif
                 </div>
             </div>

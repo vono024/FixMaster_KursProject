@@ -142,4 +142,24 @@ class RepairRequestController extends Controller
 
         return back()->with('success', 'Статус оновлено!');
     }
+
+    public function reject(RepairRequest $repair)
+    {
+        $user = auth()->user();
+
+        if ($user->role !== 'master' || $repair->master_id !== $user->id) {
+            abort(403, 'Ви не можете відмовитись від цієї заявки');
+        }
+
+        if (in_array($repair->status, ['completed', 'cancelled'])) {
+            return back()->with('error', 'Неможливо відмовитись від заявки з таким статусом');
+        }
+
+        $repair->update([
+            'master_id' => null,
+            'status' => 'new',
+        ]);
+
+        return redirect()->route('repairs.index')->with('success', 'Ви відмовились від заявки. Заявка повернута в список доступних.');
+    }
 }

@@ -129,15 +129,28 @@ class RepairRequestController extends Controller
     {
         $validated = $request->validate([
             'status' => 'required|in:assigned,in_progress,completed,cancelled',
-        ]);
-
-        $repair->update([
-            'status' => $validated['status'],
-            'completed_at' => $validated['status'] === 'completed' ? now() : null,
+            'final_cost' => 'nullable|numeric|min:0',
         ]);
 
         if ($validated['status'] === 'completed') {
-            return redirect()->route('repairs.show', $repair)->with('success', 'Роботу завершено! Клієнт може залишити відгук.');
+            if (!isset($validated['final_cost']) || $validated['final_cost'] <= 0) {
+                return back()->with('error', 'Вкажіть фінальну вартість ремонту перед завершенням!');
+            }
+        }
+
+        $updateData = [
+            'status' => $validated['status'],
+            'completed_at' => $validated['status'] === 'completed' ? now() : null,
+        ];
+
+        if (isset($validated['final_cost'])) {
+            $updateData['final_cost'] = $validated['final_cost'];
+        }
+
+        $repair->update($updateData);
+
+        if ($validated['status'] === 'completed') {
+            return redirect()->route('repairs.show', $repair)->with('success', 'Роботу завершено! Клієнт може залишити відгук та здійснити оплату.');
         }
 
         return back()->with('success', 'Статус оновлено!');

@@ -21,6 +21,10 @@ class RepairRequest extends Model
         'priority',
         'estimated_cost',
         'final_cost',
+        'amount',
+        'payment_status',
+        'payment_method',
+        'paid_at',
         'scheduled_date',
         'estimated_completion_date',
         'actual_completion_date',
@@ -34,6 +38,8 @@ class RepairRequest extends Model
         'scheduled_date' => 'datetime',
         'estimated_cost' => 'decimal:2',
         'final_cost' => 'decimal:2',
+        'amount' => 'decimal:2',
+        'paid_at' => 'datetime',
         'photos' => 'array',
     ];
 
@@ -96,5 +102,19 @@ class RepairRequest extends Model
         }
 
         return false;
+    }
+
+    public function isPaid()
+    {
+        return $this->payment_status === 'paid';
+    }
+
+    public function canBePaidBy($user)
+    {
+        return $user->role === 'client'
+            && $this->client_id === $user->id
+            && $this->status === 'completed'
+            && $this->payment_status === 'pending'
+            && $this->final_cost > 0;
     }
 }

@@ -57,6 +57,13 @@
                             </div>
                         @endif
 
+                        @if($repair->final_cost)
+                            <div class="mb-4">
+                                <h4 class="font-semibold text-gray-700 dark:text-gray-300 mb-2">Вартість ремонту:</h4>
+                                <p class="text-gray-600 dark:text-gray-400 text-xl font-bold">{{ number_format($repair->final_cost, 2) }} грн</p>
+                            </div>
+                        @endif
+
                         @if(auth()->user()->role === 'client' && $repair->client_id === auth()->id())
                             <div class="flex space-x-2 mt-6">
                                 @if($repair->canBeEditedBy(auth()->user()))
@@ -79,6 +86,7 @@
                             </div>
                         @endif
                     </div>
+
                     @if($repair->status === 'completed' && !$repair->review && auth()->user()->role === 'client' && $repair->client_id === auth()->id())
                         <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg p-6 mb-6">
                             <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">Залишити відгук</h3>
@@ -134,6 +142,41 @@
                             <p class="text-sm text-gray-500 dark:text-gray-500 mt-2">
                                 {{ $repair->review->created_at->format('d.m.Y H:i') }}
                             </p>
+                        </div>
+                    @endif
+
+                    @if(auth()->user()->role === 'client' && $repair->client_id === auth()->id() && $repair->status === 'completed')
+                        <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg p-6 mb-6">
+                            @if($repair->isPaid())
+                                <div class="bg-green-100 dark:bg-green-900 border border-green-400 dark:border-green-600 text-green-700 dark:text-green-200 px-4 py-3 rounded">
+                                    <div class="flex items-center">
+                                        <svg class="w-6 h-6 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                        </svg>
+                                        <div>
+                                            <strong>Оплачено!</strong>
+                                            <p class="text-sm">Сума: {{ number_format($repair->amount, 2) }} грн</p>
+                                            <p class="text-sm">Спосіб:
+                                                @if($repair->payment_method === 'card') Банківська картка
+                                                @elseif($repair->payment_method === 'online') Онлайн-банкінг
+                                                @else Готівка
+                                                @endif
+                                            </p>
+                                            <p class="text-sm">{{ $repair->paid_at ? $repair->paid_at->format('d.m.Y H:i') : 'Невідомо' }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            @else
+                                <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-3">Оплата</h3>
+                                <div class="flex justify-between items-center mb-4">
+                                    <span class="text-gray-700 dark:text-gray-300">Вартість ремонту:</span>
+                                    <span class="text-2xl font-bold text-gray-900 dark:text-white">{{ number_format($repair->final_cost ?? 0, 2) }} грн</span>
+                                </div>
+                                <a href="{{ route('payments.form', $repair) }}"
+                                   class="block w-full text-center bg-green-500 hover:bg-green-700 text-white font-bold py-3 px-4 rounded">
+                                    Перейти до оплати
+                                </a>
+                            @endif
                         </div>
                     @endif
 
@@ -222,30 +265,81 @@
                         <form method="POST" action="{{ route('repairs.assign', $repair) }}">
                             @csrf
                             <button type="submit"
-                                    class="w-full bg-green-500 hover:bg-green-700 text-white font-bold py-3 px-4 rounded">
+                                    class="w-full bg-green-500 hover:bg-green-700 text-white font-bold py-3 px-4 rounded mb-6">
                                 Взяти в роботу
                             </button>
                         </form>
                     @endif
 
                     @if(auth()->user()->role === 'master' && $repair->master_id === auth()->id() && in_array($repair->status, ['assigned', 'in_progress']))
-                        <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg p-6">
+                        <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg p-6 mb-6">
                             <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">Оновити статус</h3>
-                            <form method="POST" action="{{ route('repairs.update-status', $repair) }}">
+                            <form method="POST" action="{{ route('repairs.update-status', $repair) }}" id="status-form">
                                 @csrf
                                 @method('PATCH')
-                                <select name="status"
-                                        class="w-full mb-3 shadow border rounded py-2 px-3 text-gray-700 dark:text-gray-300 dark:bg-gray-700 dark:border-gray-600 leading-tight focus:outline-none focus:shadow-outline">
-                                    <option value="assigned" {{ $repair->status === 'assigned' ? 'selected' : '' }}>Призначено</option>
-                                    <option value="in_progress" {{ $repair->status === 'in_progress' ? 'selected' : '' }}>В роботі</option>
-                                    <option value="completed">Завершено</option>
-                                </select>
+
+                                <div class="mb-3">
+                                    <label for="status" class="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">
+                                        Статус
+                                    </label>
+                                    <select name="status" id="status"
+                                            class="w-full shadow border rounded py-2 px-3 text-gray-700 dark:text-gray-300 dark:bg-gray-700 dark:border-gray-600 leading-tight focus:outline-none focus:shadow-outline"
+                                            onchange="toggleCostField()">
+                                        <option value="assigned" {{ $repair->status === 'assigned' ? 'selected' : '' }}>Призначено</option>
+                                        <option value="in_progress" {{ $repair->status === 'in_progress' ? 'selected' : '' }}>В роботі</option>
+                                        <option value="completed">Завершено</option>
+                                    </select>
+                                </div>
+
+                                <div id="cost-field" class="mb-3" style="display: none;">
+                                    <label for="final_cost" class="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">
+                                        Фінальна вартість ремонту (грн) <span class="text-red-500">*</span>
+                                    </label>
+                                    <input type="number"
+                                           name="final_cost"
+                                           id="final_cost"
+                                           step="0.01"
+                                           min="0"
+                                           value="{{ old('final_cost', $repair->final_cost) }}"
+                                           placeholder="Введіть вартість"
+                                           class="w-full shadow appearance-none border rounded py-2 px-3 text-gray-700 dark:text-gray-300 dark:bg-gray-700 dark:border-gray-600 leading-tight focus:outline-none focus:shadow-outline">
+                                    @error('final_cost')
+                                    <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                                    @enderror
+                                </div>
+
                                 <button type="submit"
                                         class="w-full bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-                                    Оновити
+                                    Оновити статус
                                 </button>
                             </form>
                         </div>
+
+                        <script>
+                            function toggleCostField() {
+                                const statusSelect = document.getElementById('status');
+                                const costField = document.getElementById('cost-field');
+                                const costInput = document.getElementById('final_cost');
+
+                                if (statusSelect.value === 'completed') {
+                                    costField.style.display = 'block';
+                                    costInput.required = true;
+                                } else {
+                                    costField.style.display = 'none';
+                                    costInput.required = false;
+                                }
+                            }
+
+                            document.addEventListener('DOMContentLoaded', function() {
+                                toggleCostField();
+                            });
+
+                            @if($errors->has('final_cost'))
+                            document.addEventListener('DOMContentLoaded', function() {
+                                document.getElementById('cost-field').style.display = 'block';
+                            });
+                            @endif
+                        </script>
 
                         <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg p-6">
                             <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">Відмовитись від заявки</h3>

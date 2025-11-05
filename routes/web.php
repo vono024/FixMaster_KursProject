@@ -10,6 +10,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\MessageController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\PaymentController;
 
 Route::get('/', function () {
     return view('home');
@@ -47,6 +48,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
     Route::post('/notifications/{notification}/mark-read', [NotificationController::class, 'markAsRead'])->name('notifications.mark-read');
     Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllAsRead'])->name('notifications.mark-all-read');
+
+    Route::get('/repairs/{repair}/payment', [PaymentController::class, 'showPaymentForm'])->name('payments.form')->middleware('role:client');
+    Route::post('/repairs/{repair}/payment', [PaymentController::class, 'processPayment'])->name('payments.process')->middleware('role:client');
 
     Route::middleware('role:admin')->group(function () {
         Route::get('/admin/users', [DashboardController::class, 'adminDashboard'])->name('admin.users');

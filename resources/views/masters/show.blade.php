@@ -15,7 +15,6 @@
 
     <div class="py-12 bg-gray-50 dark:bg-gray-900 min-h-screen">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-lg mb-6">
                 <div class="bg-gradient-to-r from-blue-600 to-blue-800 p-8 sm:p-12">
                     <div class="flex flex-col sm:flex-row items-center sm:items-start">
